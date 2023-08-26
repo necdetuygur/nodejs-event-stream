@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Event Stream Example</title>
+  </head>
+  <body>
+    <h1>Event Stream Example</h1>
+    <ul></ul>
+    <script>
+      (async () => {
+        const response = await fetch("http://localhost:3000/events", {
+          headers: {
+            Accept: "text/event-stream",
+          },
+        });
+
+        if (!response.ok) {
+          throw Error(response.statusText());
+        }
+
+        for (const reader = response.body.getReader(); ; ) {
+          const { value, done } = await reader.read();
+
+          if (done) {
+            break;
+          }
+
+          const chunk = new TextDecoder().decode(value);
+          const subChunks = chunk.split(/(?<=})\n\ndata: (?={)/);
+
+          for (const subChunk of subChunks) {
+            const payload = subChunk.replace(/^data: /, "");
+            document.body.innerText = JSON.parse(payload).num;
+          }
+        }
+      })();
+    </script>
+  </body>
+</html>
